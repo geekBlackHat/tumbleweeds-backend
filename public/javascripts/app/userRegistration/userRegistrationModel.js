@@ -1,0 +1,1 @@
+﻿var userRegistrationModel=angular.module("userRegistrationModel",[])
