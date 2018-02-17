@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "description": "ExpressApp1",
   "scripts": {
-	"start": "node server.js"
-	},
+    "start": "node server.js"
+  },
   "main": "server.js",
   "author": {
     "name": "krishna",
@@ -12,19 +12,22 @@
   },
   "dependencies": {
     "angular": "^1.4.3",
+    "babel-cli": "^6.0.0",
+    "babel-preset-es2015": "*",
+    "bitgo": "^4.20.0",
     "debug": "^2.2.0",
     "ejs": "^2.3.3",
     "express": "3.4.4",
     "git": "^0.1.5",
     "jade": "*",
     "mysql": "^2.8.0",
-    "stylus": "*",
     "ripple-lib": "*",
-    "babel-cli": "^6.0.0",
-    "babel-preset-es2015": "*"
+    "stylus": "*"
   },
   "babel": {
-    "presets": ["es2015"]
+    "presets": [
+      "es2015"
+    ]
   },
   "devDependencies": {
     "eslint": "*"
