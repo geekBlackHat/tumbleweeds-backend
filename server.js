@@ -11,7 +11,8 @@ var app = express();
 
 // all environments
 app.set('port', process.env.OPENSHIFT_NODEJS_PORT || 8080);
-var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
+//var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
+var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0';
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(express.favicon());
@@ -34,6 +35,13 @@ app.get('/contact', routes.contact);
 
 //var userRegistration = require('./routes/UserRegistrationRouteConfig.js');
 //new userRegistration(app);
+var bitgoOperations = require("./server/Dao/bitgoOperations.js");
+app.get('/pingAPI', bitgoOperations.pingBitgo);
+app.get('/createNewAddress', bitgoOperations.createNewAddress);
+app.get('/listWallets', bitgoOperations.listWallets);
+app.get('/sendBitcoin', bitgoOperations.sendBitcoin);
+app.get('/addressTransactionHistory', bitgoOperations.AddressTransactionHistory);
+
 
 var dbuserRegistrationOperations = require("./server/Dao/userRegistrationDao.js");
 app.get('/GetAccountInfo', dbuserRegistrationOperations.getAccountDetails);
