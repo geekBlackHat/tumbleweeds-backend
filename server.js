@@ -11,8 +11,8 @@ var app = express();
 
 // all environments
 app.set('port', process.env.OPENSHIFT_NODEJS_PORT || 8080);
-//var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
-var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0';
+var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
+//var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0';
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(express.favicon());
@@ -44,11 +44,15 @@ app.get('/addressTransactionHistory', bitgoOperations.AddressTransactionHistory)
 
 
 var dbuserRegistrationOperations = require("./server/Dao/userRegistrationDao.js");
+app.post('/sendBTC', dbuserRegistrationOperations.sendBTC);
+app.post('/GetRegistrationInfoById', dbuserRegistrationOperations.GetUserRegistrationDetailsById);//signin
+app.post('/AddRegistrationInfo', dbuserRegistrationOperations.AddUserRegistrationDetails);//signup
+
+
 app.get('/GetAccountInfo', dbuserRegistrationOperations.getAccountDetails);
 app.get('/GetAllUsers', dbuserRegistrationOperations.getAllUsers);
 app.get('/GetRegistrationInfo', dbuserRegistrationOperations.getUserRegistrationDetails);
-app.post('/AddRegistrationInfo', dbuserRegistrationOperations.AddUserRegistrationDetails);
-app.post('/GetRegistrationInfoById', dbuserRegistrationOperations.GetUserRegistrationDetailsById);
+
 app.post('/GetUserRegistrationDetailsByPrimaryKeyId', dbuserRegistrationOperations.GetUserRegistrationDetailsByPrimaryKeyId);
 app.post('/DeleteRegistrationInfo', dbuserRegistrationOperations.DeleteRegistrationInfoById);
 
