@@ -48,6 +48,8 @@ app.post('/sendBTC', dbuserRegistrationOperations.sendBTC);
 app.post('/GetRegistrationInfoById', dbuserRegistrationOperations.GetUserRegistrationDetailsById);//signin
 app.post('/AddRegistrationInfo', dbuserRegistrationOperations.AddUserRegistrationDetails);//signup
 
+app.post('/GetProfile', dbuserRegistrationOperations.GetProfileData);//signup
+
 
 app.get('/GetAccountInfo', dbuserRegistrationOperations.getAccountDetails);
 app.get('/GetAllUsers', dbuserRegistrationOperations.getAllUsers);

@@ -17,81 +17,94 @@ exports.AddUserRegistrationDetails = function (RegistrationDetails, OnSuccessCal
     var connection = connectionProvider.mysqlConnectionStringProvider.getMysqlConnection();
     console.log("ConnectionEstablished");
     var queryStatement = "";
-    /*if (RegistrationDetails.body.UserId != "") {
-        console.log("in block");
-        queryStatement = "UPDATE users SET Name=?, FirstName=?, LastName=?, Email=?, Password=?, MobileNumber=? WHERE UserId=?";
-    }
-    else {*/
-        queryStatement = "INSERT INTO users SET  FirstName=?, LastName=?, Email=?, Password=?, MobileNumber=?";
-    //}   
-    var Registrations = {
-        UserId: RegistrationDetails.body.UserId,
-        FirstName: RegistrationDetails.body.FirstName,
-        LastName: RegistrationDetails.body.LastName,
-        Email: RegistrationDetails.body.Email,
-        Password: RegistrationDetails.body.Password,
-        MobileNumber: RegistrationDetails.body.MobileNumber
-    }
-    console.log(Registrations);
     if (connection) {
-        if(RegistrationDetails.body.Email != "") {
-        connection.query(queryStatement, [
-        Registrations.FirstName,
-        Registrations.LastName,
-        Registrations.Email,
-        Registrations.Password,
-        Registrations.MobileNumber], function (err, result) {
-                console.log("User Registrations :-" + JSON.stringify(Registrations));
-                if (err) { OnSuccessCallback.send({res : err}); }
-                console.log("Successfully Added A USer");
-                console.log("result.insertId", result.insertId);
+        queryStatement = "SELECT * FROM users WHERE Email=?";
+        connection.query(queryStatement, RegistrationDetails.body.Email, function (err, rows, fields) {
+            if (err) { 
+                OnSuccessCallback.send({res : err});
+            }
+            console.log("Successfully loaded..");
+            if(rows == ""){
 
-                var registeredUserId = result.insertId;
-                var id = '2NFTXvrnS2VqPByCtx7QU3M5msM93Xkv8pC';
+                queryStatement = "INSERT INTO users SET  FirstName=?, LastName=?, Email=?, Password=?, MobileNumber=?";
+                var Registrations = {
+                    UserId: RegistrationDetails.body.UserId,
+                    FirstName: RegistrationDetails.body.FirstName,
+                    LastName: RegistrationDetails.body.LastName,
+                    Email: RegistrationDetails.body.Email,
+                    Password: RegistrationDetails.body.Password,
+                    MobileNumber: RegistrationDetails.body.MobileNumber
+                }
+                console.log(Registrations);
+                if (connection) {
+                    if(RegistrationDetails.body.Email != "") {
+                    connection.query(queryStatement, [
+                    Registrations.FirstName,
+                    Registrations.LastName,
+                    Registrations.Email,
+                    Registrations.Password,
+                    Registrations.MobileNumber], function (err, result) {
+                            console.log("User Registrations :-" + JSON.stringify(Registrations));
+                            if (err) { OnSuccessCallback.send({res : err}); }
+                            console.log("Successfully Added A USer");
+                            console.log("result.insertId", result.insertId);
 
-                bitgo.session({}, function callback(err, session) {
-                    if (err) {
-                        // handle error
-                        OnSuccessCallback.send({res : err});
-                    }
-                    //console.dir(session);
-                    bitgo.wallets().get({ "id": id }, function callback(err, wallet) {
-                      if (err) {
-                        //throw err;
-                        OnSuccessCallback.send({res : err});
-                      }
-                      else
-                      {
-                        wallet.createAddress({ "chain": 0 }, function callback(err, address) {
-                            console.log(address);
-                            //OnSuccessCallback.send({res : address});
-                            queryStatement = "insert into btcaddress set userid=?, address=?, chain=?,addIndex=?,path=?,redeemScript=?,wallet=? "
-                            // registeredUserId address.address address.chain address.index address.path address.redeemScript address.wallet
-                            if (connection) {
-                                connection.query(queryStatement, [
-                                registeredUserId,
-                                address.address,
-                                address.chain,
-                                address.index,
-                                address.path,
-                                address.redeemScript,
-                                address.wallet], function (err, result) {
-                                        if (err) { OnSuccessCallback.send({res : err}); }
-                                        OnSuccessCallback.send({ status: "Successfully Created" });
-                                        connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+                            var registeredUserId = result.insertId;
+                            var id = '2NFTXvrnS2VqPByCtx7QU3M5msM93Xkv8pC';
 
-                                })
-                            }
-                          });
-                      }       
-                    });
-                });
-                //OnSuccessCallback.send({ status: "Successfully Updated" });
-            });
-        }
-       
-        
+                            bitgo.session({}, function callback(err, session) {
+                                if (err) {
+                                    // handle error
+                                    OnSuccessCallback.send({res : err});
+                                }
+                                //console.dir(session);
+                                bitgo.wallets().get({ "id": id }, function callback(err, wallet) {
+                                  if (err) {
+                                    //throw err;
+                                    OnSuccessCallback.send({res : err});
+                                  }
+                                  else
+                                  {
+                                    wallet.createAddress({ "chain": 0 }, function callback(err, address) {
+                                        console.log(address);
+                                        //OnSuccessCallback.send({res : address});
+                                        queryStatement = "insert into btcaddress set userid=?, address=?, chain=?,addIndex=?,path=?,redeemScript=?,wallet=? "
+                                        // registeredUserId address.address address.chain address.index address.path address.redeemScript address.wallet
+                                        if (connection) {
+                                            connection.query(queryStatement, [
+                                            registeredUserId,
+                                            address.address,
+                                            address.chain,
+                                            address.index,
+                                            address.path,
+                                            address.redeemScript,
+                                            address.wallet], function (err, result) {
+                                                    if (err) { OnSuccessCallback.send({res : err}); }
+                                                    OnSuccessCallback.send({ status: "Successfully Created" });
+                                                    connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+
+                                            })
+                                        }
+                                      });
+                                  }       
+                                });
+                            });
+                            //OnSuccessCallback.send({ status: "Successfully Updated" });
+                        });
+                    } 
+                        
+                }
+
+            }
+            else
+            {
+                OnSuccessCallback.send({ status: "User Already Created" });
+            }
+
+
+        });
     }
+
 }
 
 exports.GetUserRegistrationDetailsById = function (UserRegistrationInfo, OnSuccessCallback) {
@@ -182,13 +195,33 @@ exports.sendBTC = function (request, response) {
         
     });
 }
+exports.GetProfileData = function (request, OnSuccessCallback) {
+    var connection = connectionProvider.mysqlConnectionStringProvider.getMysqlConnection();
+    var queryStatement = "SELECT * FROM users WHERE id=?";
+    connection.query(queryStatement, parseInt(request.body.userid), (err, results, fields) => {
+        if (err) { 
+            OnSuccessCallback.send({res : err}); 
+        }
+        console.log("Successfully loaded..");
+        var btcsentqueryStatement = "SELECT * FROM btcsent WHERE userId=?";
+        connection.query(btcsentqueryStatement, parseInt(request.body.userid), (err, txtn, fields) => {
+            if(err){
+                OnSuccessCallback.send({res:err});
+            }
+            console.log("Bind Txtn");
 
-
-
-
-
-
-
+            var btcaddressqueryStatement = "SELECT * FROM btcaddress WHERE userId=?";
+            connection.query(btcaddressqueryStatement, parseInt(request.body.userid), (err, address, fields) => {
+            if(err){
+                OnSuccessCallback.send({res:err});
+            }
+              console.log("Bind Txtn");
+              OnSuccessCallback.send({BTCTransactionHistory:txtn,userinfo:results,btcaddress:address});
+            });
+        });
+        
+    });
+}
 /////////////////////OLD CODE //////////////////
 
 exports.getAccountDetails = function (request, response) {
