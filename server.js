@@ -43,10 +43,16 @@ app.get('/sendBitcoin', bitgoOperations.sendBitcoin);
 app.get('/addressTransactionHistory', bitgoOperations.AddressTransactionHistory);
 
 
+
 var dbuserRegistrationOperations = require("./server/Dao/userRegistrationDao.js");
-app.post('/sendBTC', dbuserRegistrationOperations.sendBTC);
+app.post('/sendBTC', dbuserRegistrationOperations.sendBTC);//send BTC
 app.post('/GetRegistrationInfoById', dbuserRegistrationOperations.GetUserRegistrationDetailsById);//signin
 app.post('/AddRegistrationInfo', dbuserRegistrationOperations.AddUserRegistrationDetails);//signup
+
+//trading operations
+app.post('/sellBTC', dbuserRegistrationOperations.sellBTC);
+app.post('/buyBTC', dbuserRegistrationOperations.buyBTC);
+
 
 
 app.get('/GetAccountInfo', dbuserRegistrationOperations.getAccountDetails);

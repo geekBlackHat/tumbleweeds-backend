@@ -9,7 +9,7 @@ var BitGoJS = require('bitgo/src/index.js');
 
 var useProduction = false;
 //var bitgo = new BitGoJS.BitGo(useProduction);
-var bitgo = new BitGoJS.BitGo({accessToken:'v2x3e51728cf22bcedddfa88ef928befa98af58631b27289b91786e9262bcfb0f8a'});
+var bitgo = new BitGoJS.BitGo({accessToken:'v2x7f28f92bee33837003bc69c2961081546102cf0e4af65c027cc5c1aafcb0a7dc'});
 
 
 
@@ -164,7 +164,7 @@ exports.sendBTC = function (request, response) {
                                 if (connection) {
                                     connection.query(queryStatement, [request.body.userId], function (err, rows, fields) {
                                         if (err) { response.send({res : err});  }
-                                        response.send({ status:result.status, transactions : rows });
+                                        response.send({ currentTransaction : result, transactions : rows });
                                         connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
                                     });
                                 }
@@ -183,7 +183,112 @@ exports.sendBTC = function (request, response) {
     });
 }
 
+// Buy orders
+var buyOrders = [];
 
+// Sell orders
+var sellOrders = [];
+
+var tradingHistory = [];
+
+exports.sellBTC = function (request, response) {
+    var dto = new Date();
+    var ts = dto.getTime();
+    request.body['time'] = ts;
+    sellOrders.push(request.body);
+    console.log(request.body);
+    console.log(sellOrders);
+    sortSell();
+    console.log(sellOrders);
+    matchTrade();
+    response.send({"queue":sellOrders});
+
+}
+
+exports.buyBTC = function (request, response){
+    var dto = new Date();
+    var ts = dto.getTime();
+    request.body['time'] = ts;
+    buyOrders.push(request.body);
+    console.log(request.body);
+    console.log(buyOrders);
+    sortBuy();
+    console.log(buyOrders);
+    matchTrade();
+    response.send({"queue":buyOrders});
+}
+
+var matchTrade = function(){
+    if(parseFloat(buyOrders[0].price) == parseFloat(sellOrders[0].price)){
+        if(parseFloat(buyOrders[0].amount) == parseFloat(sellOrders[0].amount)){
+            //  both orders are complete   
+            completeTransaction(buyOrders[0], 'buy'); 
+            completeTransaction(sellOrders[0], 'sell');   
+            buyOrders.shift();
+            sellOrders.shift();
+        }
+        else if (parseFloat(buyOrders[0].amount) > parseFloat(sellOrders[0].amount)){
+            //sell order is complete
+            completeTransaction(sellOrders[0], 'sell');
+            var currentbuytx = Object.assign({},buyOrders[0]);
+            currentbuytx.amount = sellOrders[0].amount;
+            completeTransaction(currentbuytx, 'buy');
+            sellOrders.shift();
+
+            buyOrders[0].amount = parseFloat(buyOrders[0].amount) - parseFloat(currentbuytx.amount);
+            matchTrade();
+        }
+        else{
+            //buy order is complete
+            completeTransaction(buyOrders[0], 'buy');
+            var currentselltx = Object.assign({},sellOrders[0]);
+            currentselltx.amount = buyOrders[0].amount;
+            completeTransaction(currentselltx, 'sell');
+            buyOrders.shift();
+
+            sellOrders[0].amount = parseFloat(sellOrders[0].amount) - parseFloat(currentselltx.amount);
+            matchTrade();
+
+        }
+    }
+    else{
+        console.log("No matching orders");
+    }
+}
+
+var completeTransaction = function(data, txType){
+    if(txType == 'buy'){
+        console.log('completed buy',data);
+    }
+    else if(txType == 'sell'){
+        console.log('completed sell',data);
+    }
+
+    tradingHistory.push(data);
+}
+
+var sortBuy = function() {
+ var bidComparator = function(a,b) {
+   var ret = b.price-a.price;
+   if(ret==0) {
+     ret = a.time-b.time;
+   }
+   return ret;
+ }
+ buyOrders.sort(bidComparator);
+}
+
+var sortSell = function() {
+var askComparator = function(a,b) {
+  var ret = a.price-b.price;
+  if(ret==0) {
+    ret = a.time-b.time;
+  }
+  return ret;
+}
+
+sellOrders.sort(askComparator);
+}
 
 
 

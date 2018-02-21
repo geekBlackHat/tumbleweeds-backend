@@ -22,6 +22,7 @@
     "jade": "*",
     "mysql": "^2.8.0",
     "ripple-lib": "*",
+    "socket.io": "^2.0.4",
     "stylus": "*"
   },
   "babel": {
