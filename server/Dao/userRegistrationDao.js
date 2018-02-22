@@ -11,6 +11,9 @@ var useProduction = false;
 //var bitgo = new BitGoJS.BitGo(useProduction);
 var bitgo = new BitGoJS.BitGo({accessToken:'v2x3e51728cf22bcedddfa88ef928befa98af58631b27289b91786e9262bcfb0f8a'});
 
+var datetime = require('node-datetime');
+var dt = datetime.create();
+var formatted = dt.format('Y-m-d H:M:S');
 
 
 exports.AddUserRegistrationDetails = function (RegistrationDetails, OnSuccessCallback) {
@@ -202,26 +205,100 @@ exports.GetProfileData = function (request, OnSuccessCallback) {
         if (err) { 
             OnSuccessCallback.send({res : err}); 
         }
-        console.log("Successfully loaded..");
+        console.log("Bind users");
         var btcsentqueryStatement = "SELECT * FROM btcsent WHERE userId=?";
         connection.query(btcsentqueryStatement, parseInt(request.body.userid), (err, txtn, fields) => {
             if(err){
                 OnSuccessCallback.send({res:err});
             }
-            console.log("Bind Txtn");
+            console.log("Bind btcsent");
 
             var btcaddressqueryStatement = "SELECT * FROM btcaddress WHERE userId=?";
             connection.query(btcaddressqueryStatement, parseInt(request.body.userid), (err, address, fields) => {
             if(err){
                 OnSuccessCallback.send({res:err});
             }
-              console.log("Bind Txtn");
-              OnSuccessCallback.send({BTCTransactionHistory:txtn,userinfo:results,btcaddress:address});
+              console.log("Bind btcaddress");
+
+            var tradinghistroyStatement = "SELECT * FROM tradinghistroy WHERE userId=?";
+            connection.query(tradinghistroyStatement, parseInt(request.body.userid), (err, tradehistroy, fields) => {
+            if(err){
+                OnSuccessCallback.send({res:err});
+            }
+              console.log("Bind tradinghistroy");
+
+            var inrtransactionStatement = "SELECT * FROM inrtransaction WHERE userId=?";
+            connection.query(inrtransactionStatement, parseInt(request.body.userid), (err, transaction, fields) => {
+            if(err){
+                OnSuccessCallback.send({res:err});
+            }
+              console.log("Bind inrtransaction");
+              OnSuccessCallback.send({BTCTransactionHistory:txtn,userinfo:results,btcaddress:address,tradinghistroy:tradehistroy,inrtransaction:transaction});
             });
+
         });
         
     });
+    });
+});
 }
+
+exports.AddTradingHistoryData = function (TradingData, OnSuccessCallback) {
+    var connection = connectionProvider.mysqlConnectionStringProvider.getMysqlConnection();
+    console.log("ConnectionEstablished");
+    var queryStatement = "";
+
+    if (connection){
+        queryStatement = "INSERT INTO tradinghistroy SET  UserId=?, Amount=?, Price=?, TxtnType=?, TotalOrderValue=?, Timestamp=?";
+       
+         connection.query(queryStatement,[parseInt(TradingData.body.userid),parseFloat(TradingData.body.amount),parseFloat(TradingData.body.Price),
+            TradingData.body.TxtnType,parseFloat(TradingData.body.TotalOrderValue),formatted], function (err, rows, fields) {
+            if (err) { 
+                OnSuccessCallback.send({res : err});
+            }
+            else{
+
+                OnSuccessCallback.send({status: "Successfully Created" });
+                connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+            }
+        });
+    }
+}
+
+exports.AddINRTransaction = function (InrTransactionData, OnSuccessCallback) {
+    var connection = connectionProvider.mysqlConnectionStringProvider.getMysqlConnection();
+    console.log("ConnectionEstablished");
+    var queryStatement = "";
+
+    if (connection){
+        queryStatement = "INSERT INTO inrtransaction SET  UserId=?, Amount=?,  Remarks=?, TxtnType=?, Timestamp=?, CreditFrom=?";
+       
+         connection.query(queryStatement,[parseInt(InrTransactionData.body.userid),parseFloat(InrTransactionData.body.amount),
+            InrTransactionData.body.remarks,InrTransactionData.body.TxtnType,formatted,InrTransactionData.body.CreditFrom], function (err, rows, fields) {
+            if (err) { 
+                OnSuccessCallback.send({RecentTransaction : 'false',res : err});
+            }
+            else{
+
+             queryStatement = "SELECT * FROM inrtransaction";
+
+                    if (connection) {
+                        connection.query(queryStatement, function (err, rows, fields) {
+                            if (err) { OnSuccessCallback.send({res : err}); }
+                            console.log("Successfully loaded..");
+                            OnSuccessCallback.send({ RecentTransaction : 'true', inrtransaction: rows });
+                        });
+                        connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+                    }
+            }
+        });
+    }
+}
+
+
+
+
+
 /////////////////////OLD CODE //////////////////
 
 exports.getAccountDetails = function (request, response) {
