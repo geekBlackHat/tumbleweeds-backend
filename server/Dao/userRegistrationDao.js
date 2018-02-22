@@ -16,7 +16,7 @@ var bitgo = new BitGoJS.BitGo({accessToken:'v2x3e51728cf22bcedddfa88ef928befa98a
 
 var datetime = require('node-datetime');
 var dt = datetime.create();
-var formatted = dt.format('Y-m-d H:M:S');
+var formatted = dt.now();
 
 
 exports.AddUserRegistrationDetails = function (RegistrationDetails, OnSuccessCallback) {
