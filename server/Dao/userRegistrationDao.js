@@ -9,7 +9,10 @@ var BitGoJS = require('bitgo/src/index.js');
 
 var useProduction = false;
 //var bitgo = new BitGoJS.BitGo(useProduction);
+//var bitgo = new BitGoJS.BitGo({accessToken:'v2x7f28f92bee33837003bc69c2961081546102cf0e4af65c027cc5c1aafcb0a7dc'});
+
 var bitgo = new BitGoJS.BitGo({accessToken:'v2x3e51728cf22bcedddfa88ef928befa98af58631b27289b91786e9262bcfb0f8a'});
+
 
 var datetime = require('node-datetime');
 var dt = datetime.create();
@@ -180,7 +183,7 @@ exports.sendBTC = function (request, response) {
                                 if (connection) {
                                     connection.query(queryStatement, [request.body.userId], function (err, rows, fields) {
                                         if (err) { response.send({res : err});  }
-                                        response.send({ status:result.status, transactions : rows });
+                                        response.send({ currentTransaction : result, transactions : rows });
                                         connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
                                     });
                                 }
@@ -198,6 +201,7 @@ exports.sendBTC = function (request, response) {
         
     });
 }
+
 exports.GetProfileData = function (request, OnSuccessCallback) {
     var connection = connectionProvider.mysqlConnectionStringProvider.getMysqlConnection();
     var queryStatement = "SELECT * FROM users WHERE id=?";
@@ -212,7 +216,6 @@ exports.GetProfileData = function (request, OnSuccessCallback) {
                 OnSuccessCallback.send({res:err});
             }
             console.log("Bind btcsent");
-
             var btcaddressqueryStatement = "SELECT * FROM btcaddress WHERE userId=?";
             connection.query(btcaddressqueryStatement, parseInt(request.body.userid), (err, address, fields) => {
             if(err){
@@ -242,6 +245,136 @@ exports.GetProfileData = function (request, OnSuccessCallback) {
     });
 });
 }
+
+
+// Buy orders
+var buyOrders = [];
+
+// Sell orders
+var sellOrders = [];
+
+var tradingHistory = [];
+
+exports.sellBTC = function (request, response) {
+    var dto = new Date();
+    var ts = dto.getTime();
+    request.body['time'] = ts;
+    sellOrders.push(request.body);
+    console.log(request.body);
+    console.log(sellOrders);
+    sortSell();
+    console.log(sellOrders);
+    matchTrade();
+    var io = request.app.get('socketio');
+    var tickerData = {
+        "buyOrders" : buyOrders,
+        "sellOrders" : sellOrders,
+        "tradingHistory" : tradingHistory
+    }
+    io.emit('ticker', tickerData);
+    app.set('ticker-data', tickerData);
+    response.send({"queue":sellOrders});
+
+}
+
+exports.buyBTC = function (request, response){
+    var dto = new Date();
+    var ts = dto.getTime();
+    request.body['time'] = ts;
+    buyOrders.push(request.body);
+    console.log(request.body);
+    console.log(buyOrders);
+    sortBuy();
+    console.log(buyOrders);
+    matchTrade();
+    var io = request.app.get('socketio');
+    var tickerData = {
+        "buyOrders" : buyOrders,
+        "sellOrders" : sellOrders,
+        "tradingHistory" : tradingHistory
+    }
+    io.emit('ticker', tickerData);
+    app.set('ticker-data', tickerData);
+    response.send({"queue":buyOrders});
+}
+
+var matchTrade = function(){
+    if(buyOrders.length == 0 || sellOrders.length == 0)
+    {
+        return;
+    }
+
+    if(parseFloat(buyOrders[0].price) == parseFloat(sellOrders[0].price)){
+        if(parseFloat(buyOrders[0].amount) == parseFloat(sellOrders[0].amount)){
+            //  both orders are complete   
+            completeTransaction(buyOrders[0], 'buy'); 
+            completeTransaction(sellOrders[0], 'sell');
+            tradingHistory.push(sellOrders[0]);   
+            buyOrders.shift();
+            sellOrders.shift();
+
+        }
+        else if (parseFloat(buyOrders[0].amount) > parseFloat(sellOrders[0].amount)){
+            //sell order is complete
+            completeTransaction(sellOrders[0], 'sell');
+            var currentbuytx = Object.assign({},buyOrders[0]);
+            currentbuytx.amount = sellOrders[0].amount;
+            completeTransaction(currentbuytx, 'buy');
+            sellOrders.shift();
+            tradingHistory.push(currentbuytx);
+            buyOrders[0].amount = parseFloat(buyOrders[0].amount) - parseFloat(currentbuytx.amount);
+            matchTrade();
+        }
+        else{
+            //buy order is complete
+            completeTransaction(buyOrders[0], 'buy');
+            var currentselltx = Object.assign({},sellOrders[0]);
+            currentselltx.amount = buyOrders[0].amount;
+            completeTransaction(currentselltx, 'sell');
+            buyOrders.shift();
+            tradingHistory.push(currentselltx);
+            sellOrders[0].amount = parseFloat(sellOrders[0].amount) - parseFloat(currentselltx.amount);
+            matchTrade();
+
+        }
+    }
+    else{
+        console.log("No matching orders");
+    }
+}
+
+var completeTransaction = function(data, txType){    
+    if(txType == 'buy'){
+        console.log('completed buy',data);
+    }
+    else if(txType == 'sell'){
+        console.log('completed sell',data);
+    }
+}
+
+var sortBuy = function() {
+    var bidComparator = function(a,b) {
+        var ret = b.price-a.price;
+        if(ret==0) {
+            ret = a.time-b.time;
+        }
+        return ret;
+    }
+    buyOrders.sort(bidComparator);
+}
+
+var sortSell = function() {
+    var askComparator = function(a,b) {
+        var ret = a.price-b.price;
+        if(ret==0) {
+            ret = a.time-b.time;
+        }
+        return ret;
+    }
+
+    sellOrders.sort(askComparator);
+}
+
 
 exports.AddTradingHistoryData = function (TradingData, OnSuccessCallback) {
     var connection = connectionProvider.mysqlConnectionStringProvider.getMysqlConnection();
@@ -294,9 +427,6 @@ exports.AddINRTransaction = function (InrTransactionData, OnSuccessCallback) {
         });
     }
 }
-
-
-
 
 
 /////////////////////OLD CODE //////////////////

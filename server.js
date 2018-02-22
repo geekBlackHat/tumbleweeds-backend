@@ -44,13 +44,18 @@ app.get('/sendBitcoin', bitgoOperations.sendBitcoin);
 app.get('/addressTransactionHistory', bitgoOperations.AddressTransactionHistory);
 
 
+
 var dbuserRegistrationOperations = require("./server/Dao/userRegistrationDao.js");
-app.post('/sendBTC', dbuserRegistrationOperations.sendBTC);
+app.post('/sendBTC', dbuserRegistrationOperations.sendBTC);//send BTC
 app.post('/GetRegistrationInfoById', dbuserRegistrationOperations.GetUserRegistrationDetailsById);//signin
 app.post('/AddRegistrationInfo', dbuserRegistrationOperations.AddUserRegistrationDetails);//signup
 
-app.post('/GetProfile', dbuserRegistrationOperations.GetProfileData);//getprofile
+//trading operations
+app.post('/sellBTC', dbuserRegistrationOperations.sellBTC);
+app.post('/buyBTC', dbuserRegistrationOperations.buyBTC);
 
+
+app.post('/GetProfile', dbuserRegistrationOperations.GetProfileData);//profile info
 app.post('/AddTradingHistoryinfo', dbuserRegistrationOperations.AddTradingHistoryData);
 app.post('/AddINRTransactionInfo', dbuserRegistrationOperations.AddINRTransaction); // Insert Tran
 
@@ -107,14 +112,14 @@ app.post('/SetOrderStatus', adminSide.SetOrderStatus);
 //app.get('/GetExerciseDetailsSearch', rdbApi.GetExerciseDetailsSearch);
 
 ////////////////////////////////////////////
-http.createServer(app).listen(app.get('port'), server_ip_address, function () {
-    console.log('Express server listening on port ' + app.get('port') + "server_ip_address " + server_ip_address);
-});
 /**
  * On all requests add headers
  **/
+ 
+/*
 var allowCrossDomain = function (req, res, next) {
-    res.header('Access-Control-Allow-Origin', "*");
+	console.log(req.headers.Origin);
+    res.header('Access-Control-Allow-Origin', req.headers.Origin);
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
     res.header("Access-Control-Allow-Headers", "Content-Type");
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
@@ -123,4 +128,30 @@ var allowCrossDomain = function (req, res, next) {
 app.configure(function () {
     app.use(allowCrossDomain);
 });
+*/
+
+
+
+var cors = require('cors');
+
+app.use(cors({credentials: false, origin: "http://localhost:4300"}));
+
+
+var serverExchange = http.createServer(app);
+var io = require('socket.io')(serverExchange, { origins: '*:*'});
+io.origins('*:*');
+io.set('transports', [ 'websocket' ]);
+
+serverExchange.listen(app.get('port'), server_ip_address, function () {
+    console.log('Express server listening on port ' + app.get('port') + "server_ip_address " + server_ip_address);
+});
+
+
+//io.set('origins', '*:*');
+
+app.set('socketio', io);
+
+io.on('connection', function(socket){
+	console.log('made socket connection', socket.id);
+})
 

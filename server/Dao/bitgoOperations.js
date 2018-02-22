@@ -2,7 +2,9 @@ var BitGoJS = require('bitgo/src/index.js');
 
 var useProduction = false;
 //var bitgo = new BitGoJS.BitGo(useProduction);
-var bitgo = new BitGoJS.BitGo({accessToken:'v2x3e51728cf22bcedddfa88ef928befa98af58631b27289b91786e9262bcfb0f8a'});
+//DMI IP v2x7f28f92bee33837003bc69c2961081546102cf0e4af65c027cc5c1aafcb0a7dc
+//Home Add v2x3e51728cf22bcedddfa88ef928befa98af58631b27289b91786e9262bcfb0f8a
+var bitgo = new BitGoJS.BitGo({accessToken:'v2x7f28f92bee33837003bc69c2961081546102cf0e4af65c027cc5c1aafcb0a7dc'});
 
 
 
@@ -119,6 +121,22 @@ exports.sendBitcoin = function(request, response) {
 	});
 }
 
-exports.AddressTransactionHistory = function(request, response){
-	
+exports.AddressTransactionHistory = function(request, addresponse){
+	var address = "2N3ijFxdaYv7KMhUTvW2LnkyLvHHjvL58hr";
+	bitgo.session({}, function callback(err, session) {
+		if (err) {
+		    // handle error
+		    addresponse.send({"err" : err});
+		}
+	  	console.dir(session);
+		bitgo.blockchain().getAddressTransactions({address: address}, function(err, response) {
+		  if (err) { console.log(err); 
+		  	addresponse.send({
+		  		"err" : err
+		  	}); 
+		  }
+		  console.log(JSON.stringify(response, null, 4));
+		  addresponse.send({response});
+		});
+	});
 }
