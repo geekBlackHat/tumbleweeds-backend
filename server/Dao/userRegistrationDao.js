@@ -12,86 +12,98 @@ var useProduction = false;
 var bitgo = new BitGoJS.BitGo({accessToken:'v2x7f28f92bee33837003bc69c2961081546102cf0e4af65c027cc5c1aafcb0a7dc'});
 
 
-
 exports.AddUserRegistrationDetails = function (RegistrationDetails, OnSuccessCallback) {
     var connection = connectionProvider.mysqlConnectionStringProvider.getMysqlConnection();
     console.log("ConnectionEstablished");
     var queryStatement = "";
-    /*if (RegistrationDetails.body.UserId != "") {
-        console.log("in block");
-        queryStatement = "UPDATE users SET Name=?, FirstName=?, LastName=?, Email=?, Password=?, MobileNumber=? WHERE UserId=?";
-    }
-    else {*/
-        queryStatement = "INSERT INTO users SET  FirstName=?, LastName=?, Email=?, Password=?, MobileNumber=?";
-    //}   
-    var Registrations = {
-        UserId: RegistrationDetails.body.UserId,
-        FirstName: RegistrationDetails.body.FirstName,
-        LastName: RegistrationDetails.body.LastName,
-        Email: RegistrationDetails.body.Email,
-        Password: RegistrationDetails.body.Password,
-        MobileNumber: RegistrationDetails.body.MobileNumber
-    }
-    console.log(Registrations);
     if (connection) {
-        if(RegistrationDetails.body.Email != "") {
-        connection.query(queryStatement, [
-        Registrations.FirstName,
-        Registrations.LastName,
-        Registrations.Email,
-        Registrations.Password,
-        Registrations.MobileNumber], function (err, result) {
-                console.log("User Registrations :-" + JSON.stringify(Registrations));
-                if (err) { OnSuccessCallback.send({res : err}); }
-                console.log("Successfully Added A USer");
-                console.log("result.insertId", result.insertId);
+        queryStatement = "SELECT * FROM users WHERE Email=?";
+        connection.query(queryStatement, RegistrationDetails.body.Email, function (err, rows, fields) {
+            if (err) { 
+                OnSuccessCallback.send({res : err});
+            }
+            console.log("Successfully loaded..");
+            if(rows == ""){
 
-                var registeredUserId = result.insertId;
-                var id = '2NFTXvrnS2VqPByCtx7QU3M5msM93Xkv8pC';
+                queryStatement = "INSERT INTO users SET  FirstName=?, LastName=?, Email=?, Password=?, MobileNumber=?";
+                var Registrations = {
+                    UserId: RegistrationDetails.body.UserId,
+                    FirstName: RegistrationDetails.body.FirstName,
+                    LastName: RegistrationDetails.body.LastName,
+                    Email: RegistrationDetails.body.Email,
+                    Password: RegistrationDetails.body.Password,
+                    MobileNumber: RegistrationDetails.body.MobileNumber
+                }
+                console.log(Registrations);
+                if (connection) {
+                    if(RegistrationDetails.body.Email != "") {
+                    connection.query(queryStatement, [
+                    Registrations.FirstName,
+                    Registrations.LastName,
+                    Registrations.Email,
+                    Registrations.Password,
+                    Registrations.MobileNumber], function (err, result) {
+                            console.log("User Registrations :-" + JSON.stringify(Registrations));
+                            if (err) { OnSuccessCallback.send({res : err}); }
+                            console.log("Successfully Added A USer");
+                            console.log("result.insertId", result.insertId);
 
-                bitgo.session({}, function callback(err, session) {
-                    if (err) {
-                        // handle error
-                        OnSuccessCallback.send({res : err});
-                    }
-                    //console.dir(session);
-                    bitgo.wallets().get({ "id": id }, function callback(err, wallet) {
-                      if (err) {
-                        //throw err;
-                        OnSuccessCallback.send({res : err});
-                      }
-                      else
-                      {
-                        wallet.createAddress({ "chain": 0 }, function callback(err, address) {
-                            console.log(address);
-                            //OnSuccessCallback.send({res : address});
-                            queryStatement = "insert into btcaddress set userid=?, address=?, chain=?,addIndex=?,path=?,redeemScript=?,wallet=? "
-                            // registeredUserId address.address address.chain address.index address.path address.redeemScript address.wallet
-                            if (connection) {
-                                connection.query(queryStatement, [
-                                registeredUserId,
-                                address.address,
-                                address.chain,
-                                address.index,
-                                address.path,
-                                address.redeemScript,
-                                address.wallet], function (err, result) {
-                                        if (err) { OnSuccessCallback.send({res : err}); }
-                                        OnSuccessCallback.send({ status: "Successfully Created" });
-                                        connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+                            var registeredUserId = result.insertId;
+                            var id = '2NFTXvrnS2VqPByCtx7QU3M5msM93Xkv8pC';
 
-                                })
-                            }
-                          });
-                      }       
-                    });
-                });
-                //OnSuccessCallback.send({ status: "Successfully Updated" });
-            });
-        }
-       
-        
+                            bitgo.session({}, function callback(err, session) {
+                                if (err) {
+                                    // handle error
+                                    OnSuccessCallback.send({res : err});
+                                }
+                                //console.dir(session);
+                                bitgo.wallets().get({ "id": id }, function callback(err, wallet) {
+                                  if (err) {
+                                    //throw err;
+                                    OnSuccessCallback.send({res : err});
+                                  }
+                                  else
+                                  {
+                                    wallet.createAddress({ "chain": 0 }, function callback(err, address) {
+                                        console.log(address);
+                                        //OnSuccessCallback.send({res : address});
+                                        queryStatement = "insert into btcaddress set userid=?, address=?, chain=?,addIndex=?,path=?,redeemScript=?,wallet=? "
+                                        // registeredUserId address.address address.chain address.index address.path address.redeemScript address.wallet
+                                        if (connection) {
+                                            connection.query(queryStatement, [
+                                            registeredUserId,
+                                            address.address,
+                                            address.chain,
+                                            address.index,
+                                            address.path,
+                                            address.redeemScript,
+                                            address.wallet], function (err, result) {
+                                                    if (err) { OnSuccessCallback.send({res : err}); }
+                                                    OnSuccessCallback.send({ status: "Successfully Created" });
+                                                    connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+
+                                            })
+                                        }
+                                      });
+                                  }       
+                                });
+                            });
+                            //OnSuccessCallback.send({ status: "Successfully Updated" });
+                        });
+                    } 
+                        
+                }
+
+            }
+            else
+            {
+                OnSuccessCallback.send({ status: "User Already Created" });
+            }
+
+
+        });
     }
+
 }
 
 exports.GetUserRegistrationDetailsById = function (UserRegistrationInfo, OnSuccessCallback) {
@@ -183,6 +195,33 @@ exports.sendBTC = function (request, response) {
     });
 }
 
+exports.GetProfileData = function (request, OnSuccessCallback) {
+    var connection = connectionProvider.mysqlConnectionStringProvider.getMysqlConnection();
+    var queryStatement = "SELECT * FROM users WHERE id=?";
+    connection.query(queryStatement, parseInt(request.body.userid), (err, results, fields) => {
+        if (err) { 
+            OnSuccessCallback.send({res : err}); 
+        }
+        console.log("Successfully loaded..");
+        var btcsentqueryStatement = "SELECT * FROM btcsent WHERE userId=?";
+        connection.query(btcsentqueryStatement, parseInt(request.body.userid), (err, txtn, fields) => {
+            if(err){
+                OnSuccessCallback.send({res:err});
+            }
+            console.log("Bind Txtn");
+            var btcaddressqueryStatement = "SELECT * FROM btcaddress WHERE userId=?";
+            connection.query(btcaddressqueryStatement, parseInt(request.body.userid), (err, address, fields) => {
+            if(err){
+                OnSuccessCallback.send({res:err});
+            }
+              console.log("Bind Txtn");
+              OnSuccessCallback.send({BTCTransactionHistory:txtn,userinfo:results,btcaddress:address});
+            });
+        });
+        
+    });
+}
+
 // Buy orders
 var buyOrders = [];
 
@@ -201,6 +240,14 @@ exports.sellBTC = function (request, response) {
     sortSell();
     console.log(sellOrders);
     matchTrade();
+    var io = request.app.get('socketio');
+    var tickerData = {
+        "buyOrders" : buyOrders,
+        "sellOrders" : sellOrders,
+        "tradingHistory" : tradingHistory
+    }
+    io.emit('ticker', tickerData);
+    app.set('ticker-data', tickerData);
     response.send({"queue":sellOrders});
 
 }
@@ -215,17 +262,32 @@ exports.buyBTC = function (request, response){
     sortBuy();
     console.log(buyOrders);
     matchTrade();
+    var io = request.app.get('socketio');
+    var tickerData = {
+        "buyOrders" : buyOrders,
+        "sellOrders" : sellOrders,
+        "tradingHistory" : tradingHistory
+    }
+    io.emit('ticker', tickerData);
+    app.set('ticker-data', tickerData);
     response.send({"queue":buyOrders});
 }
 
 var matchTrade = function(){
+    if(buyOrders.length == 0 || sellOrders.length == 0)
+    {
+        return;
+    }
+
     if(parseFloat(buyOrders[0].price) == parseFloat(sellOrders[0].price)){
         if(parseFloat(buyOrders[0].amount) == parseFloat(sellOrders[0].amount)){
             //  both orders are complete   
             completeTransaction(buyOrders[0], 'buy'); 
-            completeTransaction(sellOrders[0], 'sell');   
+            completeTransaction(sellOrders[0], 'sell');
+            tradingHistory.push(sellOrders[0]);   
             buyOrders.shift();
             sellOrders.shift();
+
         }
         else if (parseFloat(buyOrders[0].amount) > parseFloat(sellOrders[0].amount)){
             //sell order is complete
@@ -234,7 +296,7 @@ var matchTrade = function(){
             currentbuytx.amount = sellOrders[0].amount;
             completeTransaction(currentbuytx, 'buy');
             sellOrders.shift();
-
+            tradingHistory.push(currentbuytx);
             buyOrders[0].amount = parseFloat(buyOrders[0].amount) - parseFloat(currentbuytx.amount);
             matchTrade();
         }
@@ -245,7 +307,7 @@ var matchTrade = function(){
             currentselltx.amount = buyOrders[0].amount;
             completeTransaction(currentselltx, 'sell');
             buyOrders.shift();
-
+            tradingHistory.push(currentselltx);
             sellOrders[0].amount = parseFloat(sellOrders[0].amount) - parseFloat(currentselltx.amount);
             matchTrade();
 
@@ -256,41 +318,37 @@ var matchTrade = function(){
     }
 }
 
-var completeTransaction = function(data, txType){
+var completeTransaction = function(data, txType){    
     if(txType == 'buy'){
         console.log('completed buy',data);
     }
     else if(txType == 'sell'){
         console.log('completed sell',data);
     }
-
-    tradingHistory.push(data);
 }
 
 var sortBuy = function() {
- var bidComparator = function(a,b) {
-   var ret = b.price-a.price;
-   if(ret==0) {
-     ret = a.time-b.time;
-   }
-   return ret;
- }
- buyOrders.sort(bidComparator);
+    var bidComparator = function(a,b) {
+        var ret = b.price-a.price;
+        if(ret==0) {
+            ret = a.time-b.time;
+        }
+        return ret;
+    }
+    buyOrders.sort(bidComparator);
 }
 
 var sortSell = function() {
-var askComparator = function(a,b) {
-  var ret = a.price-b.price;
-  if(ret==0) {
-    ret = a.time-b.time;
-  }
-  return ret;
+    var askComparator = function(a,b) {
+        var ret = a.price-b.price;
+        if(ret==0) {
+            ret = a.time-b.time;
+        }
+        return ret;
+    }
+
+    sellOrders.sort(askComparator);
 }
-
-sellOrders.sort(askComparator);
-}
-
-
 
 
 
