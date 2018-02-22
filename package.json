@@ -22,6 +22,7 @@
     "git": "^0.1.5",
     "jade": "*",
     "mysql": "^2.8.0",
+    "node-datetime": "^2.0.6",
     "ripple-lib": "*",
     "socket.io": "^2.0.4",
     "stylus": "*"

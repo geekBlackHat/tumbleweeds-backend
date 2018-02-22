@@ -7,6 +7,7 @@ var routes = require('./routes');
 var http = require('http');
 var path = require('path');
 
+
 var app = express();
 
 // all environments
@@ -49,14 +50,14 @@ app.post('/sendBTC', dbuserRegistrationOperations.sendBTC);//send BTC
 app.post('/GetRegistrationInfoById', dbuserRegistrationOperations.GetUserRegistrationDetailsById);//signin
 app.post('/AddRegistrationInfo', dbuserRegistrationOperations.AddUserRegistrationDetails);//signup
 
-
 //trading operations
 app.post('/sellBTC', dbuserRegistrationOperations.sellBTC);
 app.post('/buyBTC', dbuserRegistrationOperations.buyBTC);
 
 
 app.post('/GetProfile', dbuserRegistrationOperations.GetProfileData);//profile info
-
+app.post('/AddTradingHistoryinfo', dbuserRegistrationOperations.AddTradingHistoryData);
+app.post('/AddINRTransactionInfo', dbuserRegistrationOperations.AddINRTransaction); // Insert Tran
 
 
 app.get('/GetAccountInfo', dbuserRegistrationOperations.getAccountDetails);
