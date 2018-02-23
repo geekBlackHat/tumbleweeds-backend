@@ -32,7 +32,7 @@ exports.AddUserRegistrationDetails = function (RegistrationDetails, OnSuccessCal
             console.log("Successfully loaded..");
             if(rows == ""){
 
-                queryStatement = "INSERT INTO users SET  FirstName=?, LastName=?, Email=?, Password=?, MobileNumber=?";
+                queryStatement = "INSERT INTO users SET  FirstName=?, LastName=?, Email=?, Password=?, MobileNumber=?,INRBalance=?,BTCBalance=?";
                 var Registrations = {
                     UserId: RegistrationDetails.body.UserId,
                     FirstName: RegistrationDetails.body.FirstName,
@@ -49,13 +49,28 @@ exports.AddUserRegistrationDetails = function (RegistrationDetails, OnSuccessCal
                     Registrations.LastName,
                     Registrations.Email,
                     Registrations.Password,
-                    Registrations.MobileNumber], function (err, result) {
+                    Registrations.MobileNumber,'100000','0.5'], function (err, result) {
                             console.log("User Registrations :-" + JSON.stringify(Registrations));
                             if (err) { OnSuccessCallback.send({res : err}); }
                             console.log("Successfully Added A USer");
                             console.log("result.insertId", result.insertId);
 
                             var registeredUserId = result.insertId;
+
+                             if (connection){
+                                        queryStatement = "INSERT INTO inrtransaction SET Amount=?, UserId= ?, TxtnType=?,Timestamp=?,CreditFrom=? ";
+                                       
+                                         connection.query(queryStatement,['100000',registeredUserId, 'deposit',formatted, 'exchange'], function (err, rows, fields) {
+                                            if (err) { 
+                                                OnSuccessCallback.send({res : err});
+                                            }
+                                            else{
+
+                                                OnSuccessCallback.send({status: "Successfully Created" });
+                                                connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+                                            }
+                                        });
+                                    }       
                             var id = '2NFTXvrnS2VqPByCtx7QU3M5msM93Xkv8pC';
 
                             bitgo.session({}, function callback(err, session) {
@@ -88,11 +103,12 @@ exports.AddUserRegistrationDetails = function (RegistrationDetails, OnSuccessCal
                                                     if (err) { OnSuccessCallback.send({res : err}); }
                                                     OnSuccessCallback.send({ status: "Successfully Created" });
                                                     connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
-
                                             })
                                         }
                                       });
-                                  }       
+                                        
+                                  }
+                                  
                                 });
                             });
                             //OnSuccessCallback.send({ status: "Successfully Updated" });
@@ -412,17 +428,77 @@ exports.AddINRTransaction = function (InrTransactionData, OnSuccessCallback) {
                 OnSuccessCallback.send({RecentTransaction : 'false',res : err});
             }
             else{
-
-             queryStatement = "SELECT * FROM inrtransaction";
-
-                    if (connection) {
-                        connection.query(queryStatement, function (err, rows, fields) {
+               //if(InrTransactionData.body.TxtnType =='deposit'){
+                queryStatement = "SELECT INRBalance FROM users where id=?";
+                if (connection) {
+                        connection.query(queryStatement,[parseInt(InrTransactionData.body.userid)], function (err, balance, fields) {
                             if (err) { OnSuccessCallback.send({res : err}); }
-                            console.log("Successfully loaded..");
-                            OnSuccessCallback.send({ RecentTransaction : 'true', inrtransaction: rows });
+                            console.log("Successfully INRBalance Return");
+                            //OnSuccessCallback.send({ INRBalance : balance });
+                                var updatedbalance = 0;
+                                if(InrTransactionData.body.TxtnType =='deposit'){
+                                    updatedbalance =  ((balance[0].INRBalance - 0) + (InrTransactionData.body.amount - 0)); 
+                                    queryStatement = 'Update users set INRBalance = ? WHERE id =?'  
+                                     if (connection) {
+                                        connection.query(queryStatement,[updatedbalance,parseInt(InrTransactionData.body.userid)], function (err, updatedbalance, fields) {
+                                        if (err) { OnSuccessCallback.send({res : err}); }
+                                            console.log("Successfully loaded..");
+                                            //OnSuccessCallback.send({inrtransaction: rows });
+                                            queryStatement = "SELECT * FROM inrtransaction where UserId = ?";
+                                            if (connection) {
+                                                connection.query(queryStatement,[parseInt(InrTransactionData.body.userid)], function (err, rows, fields) {
+                                                    if (err) { OnSuccessCallback.send({res : err}); }
+                                                    console.log("Successfully loaded..");
+                                                    OnSuccessCallback.send({ RecentTransaction : 'true', inrtransaction: rows, message : "Successfully deposited!"});
+                                                });
+                                                connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+                                            }
+                                        }); 
+                                     }
+                                }
+                                else{
+
+                                    if((InrTransactionData.body.amount - 0)> (balance[0].INRBalance - 0)){
+                                        queryStatement = "SELECT * FROM inrtransaction where UserId = ?";
+                                        if (connection) {
+                                            connection.query(queryStatement,[parseInt(InrTransactionData.body.userid)], function (err, rows, fields) {
+                                                if (err) { OnSuccessCallback.send({res : err}); }
+                                                console.log("Successfully loaded..");
+                                                OnSuccessCallback.send({ RecentTransaction : 'false', inrtransaction: rows, message : "Insuficient Fund!" });
+                                            });
+                                            connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+                                        }
+                                        //OnSuccessCallback.send({ RecentTransaction : 'false', inrtransaction: rows });
+                                    }
+                                    else{
+                                        updatedbalance =  ((balance[0].INRBalance - 0) - (InrTransactionData.body.amount - 0)); 
+                                        queryStatement = 'Update users set INRBalance = ? WHERE id =?'  
+                                         if (connection) {
+                                            connection.query(queryStatement,[updatedbalance,parseInt(InrTransactionData.body.userid)], function (err, updatedbalance, fields) {
+                                                if (err) { OnSuccessCallback.send({res : err}); }
+                                                console.log("Successfully loaded..");
+                                                //OnSuccessCallback.send({inrtransaction: rows });
+                                                queryStatement = "SELECT * FROM inrtransaction where UserId = ?";
+                                                if (connection) {
+                                                    connection.query(queryStatement,[parseInt(InrTransactionData.body.userid)], function (err, rows, fields) {
+                                                        if (err) { OnSuccessCallback.send({res : err}); }
+                                                        console.log("Successfully loaded..");
+                                                        OnSuccessCallback.send({ RecentTransaction : 'true', inrtransaction: rows, message: "Withdrawl Successful!" });
+                                                    });
+                                                    connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+                                                }
+                                            }); 
+                                         }
+                                    }
+                                }
+                                
+                                
+                                
+
                         });
-                        connectionProvider.mysqlConnectionStringProvider.closeMysqlConnection(connection);
+                        
                     }
+                //}             
             }
         });
     }
